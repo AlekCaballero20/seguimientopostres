@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DB Morchis · Postres</title>
+  <meta name="theme-color" content="#7c4a35" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main id="authScreen" class="auth-screen">
+    <section class="auth-card glass-card">
+      <div class="dessert-orbit" aria-hidden="true">
+        <span>🍰</span><span>🍮</span><span>🍫</span><span>🍓</span>
+      </div>
+      <p class="eyebrow">DB Morchis</p>
+      <h1>Bitácora privada de postres</h1>
+      <p class="lead">Registren lo que comen, miren el historial y pidan una sugerencia cuando el antojo esté vivo pero la creatividad esté en cuidados intensivos.</p>
+      <div class="allowed-box">
+        <strong>Acceso permitido</strong>
+        <span>alekcaballeromusic@gmail.com</span>
+        <span>catalina.medina.leal@gmail.com</span>
+      </div>
+      <button id="btnLogin" class="btn btn-primary btn-wide">Entrar con Google</button>
+      <p id="authMessage" class="auth-message"></p>
+    </section>
+  </main>
+
+  <main id="appShell" class="app-shell hidden">
+    <header class="hero">
+      <nav class="topbar">
+        <div>
+          <p class="eyebrow">DB Morchis</p>
+          <h1>Seguimiento de postres</h1>
+        </div>
+        <div class="user-chip">
+          <img id="userAvatar" src="" alt="Foto de perfil" />
+          <div>
+            <strong id="userName">Usuario</strong>
+            <span id="userEmail">correo</span>
+          </div>
+          <button id="btnLogout" class="icon-btn" title="Cerrar sesión">↪</button>
+        </div>
+      </nav>
+
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="microcopy">Para Alek y Cata, porque aparentemente hasta el antojo merece gobernanza de datos.</p>
+          <h2>Coman rico sin caer en el bucle infinito del mismo postre.</h2>
+          <div class="hero-actions">
+            <button class="btn btn-primary" data-action="open-dessert">+ Agregar postre</button>
+            <button class="btn btn-secondary" data-action="suggest-now">🎲 Sugerir ahora</button>
+            <button id="btnImportLocal" class="btn btn-ghost hidden" data-action="import-local">Importar localStorage</button>
+          </div>
+        </div>
+        <div class="today-card glass-card" id="todayCard">
+          <span class="today-emoji">🍯</span>
+          <p class="eyebrow">Antojo inteligente</p>
+          <h3 id="todaySuggestionName">Aún no hay sugerencia</h3>
+          <p id="todaySuggestionReason">Agreguen postres o usen el sugeridor para evitar repetir como NPC con hambre.</p>
+          <div class="today-actions">
+            <button class="btn btn-primary" data-action="eat-suggestion" disabled id="btnEatSuggestion">Lo comimos</button>
+            <button class="btn btn-ghost" data-action="suggest-now">Otra idea</button>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <section class="layout">
+      <aside class="sidebar">
+        <button class="nav-btn active" data-tab="dashboard">📊 Resumen</button>
+        <button class="nav-btn" data-tab="desserts">🍰 Postres</button>
+        <button class="nav-btn" data-tab="suggestions">🎲 Sugeridor</button>
+        <button class="nav-btn" data-tab="history">🕰️ Historial</button>
+      </aside>
+
+      <section class="content">
+        <section id="dashboardTab" class="tab-panel active">
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="two-col">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Rotación</p>
+                  <h3>Semáforo anti-repetición</h3>
+                </div>
+                <span id="riskBadge" class="badge">Sin datos</span>
+              </div>
+              <div id="rotationInsights" class="insights"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Pendientes</p>
+                  <h3>Por probar primero</h3>
+                </div>
+                <button class="link-btn" data-tab="desserts" data-filter="wishlist">Ver todos</button>
+              </div>
+              <div id="wishlistPreview" class="mini-list"></div>
+            </article>
+          </div>
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Últimos registros</p>
+                <h3>Historial reciente</h3>
+              </div>
+              <button class="link-btn" data-tab="history">Ver historial</button>
+            </div>
+            <div id="recentLogs" class="timeline compact"></div>
+          </article>
+        </section>
+
+        <section id="dessertsTab" class="tab-panel">
+          <div class="panel">
+            <div class="panel-head wrap">
+              <div>
+                <p class="eyebrow">Catálogo</p>
+                <h3>Postres registrados</h3>
+              </div>
+              <div class="toolbar">
+                <input id="searchInput" type="search" placeholder="Buscar postre, nota o etiqueta..." />
+                <select id="filterSelect">
+                  <option value="all">Todos</option>
+                  <option value="wishlist">Por probar</option>
+                  <option value="tried">Probados</option>
+                  <option value="recent">Comidos hace poco</option>
+                  <option value="forgotten">Hace rato no salen</option>
+                </select>
+                <button class="btn btn-primary" data-action="open-dessert">+ Agregar</button>
+              </div>
+            </div>
+            <div id="dessertGrid" class="dessert-grid"></div>
+          </div>
+        </section>
+
+        <section id="suggestionsTab" class="tab-panel">
+          <article class="panel suggester-panel">
+            <div class="panel-head wrap">
+              <div>
+                <p class="eyebrow">Decisor de antojos</p>
+                <h3>¿Qué postre comemos?</h3>
+              </div>
+              <button class="btn btn-primary" data-action="generate-suggestions">Generar sugerencias</button>
+            </div>
+            <div class="suggestion-controls">
+              <label>
+                Antojo
+                <select id="cravingSelect">
+                  <option value="any">Cualquier cosa dulce</option>
+                  <option value="chocolate">Chocolate</option>
+                  <option value="cremoso">Cremoso</option>
+                  <option value="frio">Frío</option>
+                  <option value="frutal">Frutal</option>
+                  <option value="masa">Masa / panadería</option>
+                  <option value="ligero">Algo suave</option>
+                </select>
+              </label>
+              <label>
+                Evitar repetidos de
+                <select id="avoidDaysSelect">
+                  <option value="7">7 días</option>
+                  <option value="14">14 días</option>
+                  <option value="21" selected>21 días</option>
+                  <option value="30">30 días</option>
+                  <option value="60">60 días</option>
+                </select>
+              </label>
+              <label>
+                Modo
+                <select id="modeSelect">
+                  <option value="balanced">Balanceado</option>
+                  <option value="wishlist">Priorizar por probar</option>
+                  <option value="favorites">Priorizar favoritos</option>
+                  <option value="forgotten">Rescatar olvidados</option>
+                </select>
+              </label>
+            </div>
+            <div id="suggestionResults" class="suggestion-results"></div>
+          </article>
+        </section>
+
+        <section id="historyTab" class="tab-panel">
+          <article class="panel">
+            <div class="panel-head wrap">
+              <div>
+                <p class="eyebrow">Bitácora</p>
+                <h3>Historial completo</h3>
+              </div>
+              <div class="toolbar">
+                <select id="historyRangeSelect">
+                  <option value="all">Todo</option>
+                  <option value="7">Últimos 7 días</option>
+                  <option value="30">Últimos 30 días</option>
+                  <option value="90">Últimos 90 días</option>
+                </select>
+              </div>
+            </div>
+            <div id="historyTimeline" class="timeline"></div>
+          </article>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <div id="dessertModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <form id="dessertForm" class="modal-card">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Postre</p>
+          <h3 id="dessertModalTitle">Nuevo postre</h3>
+        </div>
+        <button type="button" class="icon-btn" data-action="close-modal">×</button>
+      </div>
+      <div class="form-grid">
+        <label>Nombre *
+          <input id="dessertName" required maxlength="80" placeholder="Ej: Cheesecake de frutos rojos" />
+        </label>
+        <label>Categoría
+          <select id="dessertCategory">
+            <option>🎂 Torta</option>
+            <option>🍦 Helado</option>
+            <option>🍪 Galleta</option>
+            <option>🍫 Chocolate / Brownie</option>
+            <option>🥐 Masa / Hojaldre</option>
+            <option>🍮 Crema / Flan</option>
+            <option>🍓 Frutal</option>
+            <option>🥞 Panadería dulce</option>
+            <option>🍰 Otro</option>
+          </select>
+        </label>
+        <label>Estado
+          <select id="dessertStatus">
+            <option value="wishlist">Por probar</option>
+            <option value="tried">Ya probado</option>
+          </select>
+        </label>
+        <label>Calificación inicial
+          <select id="dessertRating">
+            <option value="0">Sin calificar</option>
+            <option value="1">★☆☆☆☆</option>
+            <option value="2">★★☆☆☆</option>
+            <option value="3" selected>★★★☆☆</option>
+            <option value="4">★★★★☆</option>
+            <option value="5">★★★★★</option>
+          </select>
+        </label>
+        <label>Textura
+          <select id="dessertTexture">
+            <option value="cremoso">Cremoso</option>
+            <option value="crujiente">Crujiente</option>
+            <option value="esponjoso">Esponjoso</option>
+            <option value="frio">Frío</option>
+            <option value="suave">Suave</option>
+            <option value="denso">Denso</option>
+          </select>
+        </label>
+        <label>Intensidad dulce
+          <select id="dessertSweetness">
+            <option value="suave">Suave</option>
+            <option value="medio" selected>Medio</option>
+            <option value="intenso">Intenso</option>
+          </select>
+        </label>
+        <label>Lugar / fuente
+          <input id="dessertPlace" maxlength="100" placeholder="Casa, panadería, restaurante, receta..." />
+        </label>
+        <label>Etiquetas
+          <input id="dessertTags" maxlength="140" placeholder="chocolate, frío, fruta, rápido..." />
+        </label>
+      </div>
+      <label>Notas
+        <textarea id="dessertNotes" rows="3" maxlength="500" placeholder="Qué les gustó, versión ideal, receta, precio, etc."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost danger" data-action="delete-dessert" id="btnDeleteDessert">Eliminar</button>
+        <span></span>
+        <button type="button" class="btn btn-ghost" data-action="close-modal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="eatModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <form id="eatForm" class="modal-card small">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Registro rápido</p>
+          <h3 id="eatModalTitle">Registrar consumo</h3>
+        </div>
+        <button type="button" class="icon-btn" data-action="close-eat-modal">×</button>
+      </div>
+      <label>Fecha
+        <input type="date" id="eatDate" required />
+      </label>
+      <label>¿Quién lo registró?
+        <select id="eatBy">
+          <option value="Alek">Alek</option>
+          <option value="Cata">Cata</option>
+          <option value="Ambos">Ambos</option>
+        </select>
+      </label>
+      <label>Calificación de esta vez
+        <select id="eatRating">
+          <option value="0">Sin calificar</option>
+          <option value="1">★☆☆☆☆</option>
+          <option value="2">★★☆☆☆</option>
+          <option value="3">★★★☆☆</option>
+          <option value="4" selected>★★★★☆</option>
+          <option value="5">★★★★★</option>
+        </select>
+      </label>
+      <label>Notas de esta vez
+        <textarea id="eatNotes" rows="3" maxlength="400" placeholder="Dónde, con qué, si valió la pena o si fue puro impulso humano..."></textarea>
+      </label>
+      <div class="modal-actions">
+        <span></span><span></span>
+        <button type="button" class="btn btn-ghost" data-action="close-eat-modal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Registrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
